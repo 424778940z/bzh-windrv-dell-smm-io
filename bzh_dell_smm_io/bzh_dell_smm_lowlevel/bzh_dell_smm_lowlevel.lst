@@ -1,0 +1,151 @@
+Microsoft (R) Macro Assembler (x64) Version 14.00.23026.0   09/04/15 00:32:03
+bzh_dell_smm_lowlevel.asm				     Page 1 - 1
+
+
+				;   lowlevel.asm - low level hardware access for x64 systems
+				;   
+				;   FanIO driver V2.3
+				;   Copyright(c) 2001-2007 Christian Diefer
+				;
+				;   This program is free software; you can redistribute it and/or modify
+				;   it under the terms of the GNU General Public License version 2 as
+				;   published by the Free Software Foundation.
+				;
+				;   This program is distributed in the hope that it will be useful,
+				;   but WITHOUT ANY WARRANTY; without even the implied warranty of
+				;   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+				;   GNU General Public License for more details.
+				;
+				;   You should have received a copy of the GNU General Public License
+				;   along with this program; if not, write to the Free Software
+				;   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+ 00000000			.code
+
+				PUBLIC dell_smm_lowlevel
+				PUBLIC msr_read
+
+				;rcx:SMBIOS_PKG* cmd
+ 00000000			dell_smm_lowlevel PROC
+ 00000000  51			  push rcx
+ 00000001  52			  push rdx
+ 00000002  41/ 50		  push r8
+ 00000004  41/ 51		  push r9
+ 00000006  53			  push rbx
+
+ 00000007  48/ 89 0D		  mov sptr,rcx
+	   00000000 R
+ 0000000E  4C/ 8B C1		  mov r8,rcx
+ 00000011  48/ 33 C0		  xor rax,rax
+ 00000014  41/ 8B 00		  mov eax,dword ptr [r8+0]
+ 00000017  89 05 00000008 R	  mov cmd,eax
+				  
+ 0000001D  48/ 33 DB		  xor rbx,rbx
+ 00000020  41/ 8B 58 04		  mov ebx,dword ptr [r8+4]
+ 00000024  89 1D 00000010 R	  mov data,ebx
+
+ 0000002A  48/ 33 C9		  xor rcx,rcx
+ 0000002D  41/ 8B 48 08		  mov ecx,dword ptr [r8+8]
+ 00000031  89 0D 00000018 R	  mov stat1,ecx
+				  
+ 00000037  48/ 33 D2		  xor rdx,rdx
+ 0000003A  41/ 8B 50 0C		  mov edx,dword ptr [r8+12]
+ 0000003E  89 15 00000020 R	  mov stat2,edx
+
+ 00000044  E6 B2		  out 0b2h,al
+ 00000046  E6 84		  out 084h,al
+
+ 00000048  3B 05 00000008 R	  cmp eax,dword ptr [cmd]
+ 0000004E  75 18		  jne cmdok
+ 00000050  3B 1D 00000010 R	  cmp ebx,dword ptr [data]
+ 00000056  75 10		  jne cmdok
+ 00000058  3B 0D 00000018 R	  cmp ecx,dword ptr [stat1]
+ 0000005E  75 08		  jne cmdok
+ 00000060  3B 15 00000020 R	  cmp edx,dword ptr [stat2]
+ 00000066  74 22		  je error
+
+ 00000068			cmdok:
+ 00000068  4C/ 8B 05		  mov r8,sptr
+	   00000000 R
+ 0000006F  41/ 89 00		  mov dword ptr [r8+0],eax
+ 00000072  41/ 89 58 04		  mov dword ptr [r8+4],ebx
+ 00000076  41/ 89 48 08		  mov dword ptr [r8+8],ecx
+ 0000007A  41/ 89 50 0C		  mov dword ptr [r8+12],edx
+ 0000007E  25 0000FFFF		  and eax,0ffffh
+ 00000083  3D 0000FFFF		  cmp eax,0ffffh
+ 00000088  75 05		  jne ok
+
+ 0000008A			error:
+ 0000008A  48/ 33 C0		  xor rax,rax     ; Fehler (rax=0)
+ 0000008D  EB 06		  jmp ende
+
+ 0000008F			ok:
+ 0000008F  48/ 33 C0		  xor rax,rax     ; Erfolg (rax=1)
+ 00000092  48/ FF C0		  inc rax
+
+ 00000095			ende:
+ 00000095  5B			  pop rbx
+ 00000096  41/ 59		  pop r9
+ 00000098  41/ 58		  pop r8
+ 0000009A  5A			  pop rdx
+ 0000009B  59			  pop rcx
+ 0000009C  C3			  RET
+ 0000009D			dell_smm_lowlevel ENDP
+
+				; rcx: MSR
+ 0000009D			msr_read PROC
+ 0000009D  51			  push rcx
+ 0000009E  52			  push rdx
+				  
+ 0000009F  0F 32		  rdmsr
+ 000000A1  48/ C1 E0 20		  shl rax,32
+ 000000A5  48/ 0B C2		  or rax,rdx
+				  
+ 000000A8  5A			  pop rdx
+ 000000A9  59			  pop rcx
+ 000000AA  C3			  RET
+ 000000AB			msr_read ENDP
+
+ 00000000			.data
+ 00000000			sptr  dq  0
+	   0000000000000000
+ 00000008 00000000		cmd   dd  0,0
+	   00000000
+ 00000010 00000000		data  dd  0,0
+	   00000000
+ 00000018 00000000		stat1 dd  0,0
+	   00000000
+ 00000020 00000000		stat2 dd  0,0
+	   00000000
+
+				END
+Microsoft (R) Macro Assembler (x64) Version 14.00.23026.0   09/04/15 00:32:03
+bzh_dell_smm_lowlevel.asm				     Symbols 2 - 1
+
+
+
+
+Procedures, parameters, and locals:
+
+                N a m e                 Type     Value    Attr
+
+dell_smm_lowlevel  . . . . . . .	P 	 00000000 _TEXT	Length= 0000009D Public
+  cmdok  . . . . . . . . . . . .	L 	 00000068 _TEXT	
+  error  . . . . . . . . . . . .	L 	 0000008A _TEXT	
+  ok . . . . . . . . . . . . . .	L 	 0000008F _TEXT	
+  ende . . . . . . . . . . . . .	L 	 00000095 _TEXT	
+msr_read . . . . . . . . . . . .	P 	 0000009D _TEXT	Length= 0000000E Public
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+cmd  . . . . . . . . . . . . . .	DWord	 00000008 _DATA	
+data . . . . . . . . . . . . . .	DWord	 00000010 _DATA	
+sptr . . . . . . . . . . . . . .	QWord	 00000000 _DATA	
+stat1  . . . . . . . . . . . . .	DWord	 00000018 _DATA	
+stat2  . . . . . . . . . . . . .	DWord	 00000020 _DATA	
+
+	   0 Warnings
+	   0 Errors
